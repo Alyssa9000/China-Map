@@ -268,6 +268,33 @@
       line-height: 1.5;
       font-weight: 600;
     }
+    .pop-facts {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.45rem;
+    }
+    .pop-fact {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: #fff;
+      border-radius: 14px;
+      padding: 0.45rem 0.75rem;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.08);
+    }
+    .pop-fact-label {
+      color: #6d4c41;
+      font-size: 0.95rem;
+      font-weight: 700;
+      flex: 1;
+    }
+    .pop-fact-value {
+      color: #e65100;
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      font-weight: 800;
+      white-space: nowrap;
+    }
     .btn-close {
       margin-top: 0.5rem;
       align-self: flex-start;
@@ -346,6 +373,20 @@
         <div class="ethnic-badge" id="ethnicTitle">蒙古族</div>
         <div class="region-name" id="regionName"></div>
         <p class="greeting" id="greeting"></p>
+        <div class="pop-facts" id="popFacts">
+          <div class="pop-fact">
+            <span class="pop-fact-label">总人口</span>
+            <span class="pop-fact-value" id="factPop"></span>
+          </div>
+          <div class="pop-fact">
+            <span class="pop-fact-label">占全国总人口</span>
+            <span class="pop-fact-value" id="factShare"></span>
+          </div>
+          <div class="pop-fact">
+            <span class="pop-fact-label">55个少数民族中</span>
+            <span class="pop-fact-value" id="factRank"></span>
+          </div>
+        </div>
         <button type="button" class="btn btn-close" id="modalClose">继续逛地图 🎈</button>
       </div>
     </div>
@@ -357,26 +398,41 @@
         img: "蒙古族小女孩_教材插画风_透明底_1080.png",
         greeting: "你好呀！我在内蒙古草原长大，欢迎来做客！🐎",
         tone: [523, 659, 784],
+        population: "629 万",
+        share: "0.45%",
+        rank: "第 9 位",
       },
       guangxi: {
         img: "壮族小男孩_教材插画风_透明底_1080.png",
         greeting: "嗨！广西山好水好，三月三我们一起唱歌吧！🎵",
         tone: [587, 698, 880],
+        population: "1957 万",
+        share: "1.39%",
+        rank: "第 1 位",
       },
       xizang: {
         img: "藏族小男孩_教材插画风_透明底_1080.png",
         greeting: "扎西德勒！雪域高原上，我们心连着心！🏔️",
         tone: [494, 622, 740],
+        population: "706 万",
+        share: "0.50%",
+        rank: "第 8 位",
       },
       ningxia: {
         img: "回族小女孩_教材插画风_透明底_1080.png",
         greeting: "你好！宁夏有美丽的黄河和香香的盖碗茶！🍵",
         tone: [554, 698, 831],
+        population: "1138 万",
+        share: "0.81%",
+        rank: "第 3 位",
       },
       xinjiang: {
         img: "维吾尔族小女孩_教材插画风_透明底_1080.png",
         greeting: "亚克西木热合麦提！新疆瓜果甜，友谊更甜！🍇",
         tone: [440, 554, 659],
+        population: "1177 万",
+        share: "0.84%",
+        rank: "第 2 位",
       },
     };
 
@@ -393,6 +449,9 @@
     const ethnicTitle = document.getElementById("ethnicTitle");
     const regionName = document.getElementById("regionName");
     const greeting = document.getElementById("greeting");
+    const factPop = document.getElementById("factPop");
+    const factShare = document.getElementById("factShare");
+    const factRank = document.getElementById("factRank");
 
     function ensureAudio() {
       if (!audioCtx) {
@@ -464,6 +523,9 @@
       ethnicTitle.textContent = ethnic;
       regionName.textContent = "📍 " + name;
       greeting.textContent = data.greeting;
+      factPop.textContent = data.population;
+      factShare.textContent = data.share;
+      factRank.textContent = data.rank;
       modalImg.src = data.img;
       modalImg.alt = ethnic + "小朋友";
 
