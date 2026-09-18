@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中华民族一家亲 · 点击地图识民族</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #fff1eb 0%, #ace0f9 45%, #fff9c4 100%);
+      background-size: 200% 200%;
+      animation: skyShift 12s ease infinite;
+    }
+    @keyframes skyShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 0.6rem 1rem 1rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+    .title-wrap h1 {
+      font-size: clamp(1.35rem, 2.8vw, 2.1rem);
+      color: #d84315;
+      text-shadow: 2px 2px 0 #fff, 0 0 12px rgba(255, 193, 7, 0.6);
+      letter-spacing: 0.06em;
+    }
+    .title-wrap p {
+      margin-top: 0.25rem;
+      font-size: clamp(0.85rem, 1.6vw, 1.1rem);
+      color: #5d4037;
+      font-weight: 600;
+    }
+    .title-wrap p span {
+      display: inline-block;
+      animation: hintBounce 1.2s ease-in-out infinite;
+    }
+    @keyframes hintBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .btn {
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+    }
+    .btn-sound {
+      background: #fff;
+      color: #e65100;
+      font-size: 0.95rem;
+    }
+    .btn-sound.off { opacity: 0.55; }
+
+    .map-stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-top: 0.4rem;
+    }
+    .map-frame {
+      width: min(96vw, calc((100vh - 140px) * 1));
+      height: min(calc(100vh - 140px), 96vw);
+      max-width: 1080px;
+      max-height: 1080px;
+      background: #fffef7;
+      border-radius: 24px;
+      box-shadow:
+        0 12px 40px rgba(255, 107, 107, 0.25),
+        inset 0 0 0 4px #fff,
+        inset 0 0 0 8px #ffcc80;
+      overflow: visible;
+      position: relative;
+    }
+    .map-frame object {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .sparkles {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: 24px;
+    }
+    .sparkle {
+      position: absolute;
+      font-size: 1.2rem;
+      opacity: 0.35;
+      animation: floatStar 4s ease-in-out infinite;
+    }
+    @keyframes floatStar {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+      50% { transform: translateY(-12px) rotate(20deg); opacity: 0.5; }
+    }
+
+    /* 开场 */
+    .start-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(255, 248, 225, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+    .start-overlay.hidden { display: none; }
+    .start-card {
+      text-align: center;
+      padding: 2rem 2.5rem;
+      background: #fff;
+      border-radius: 28px;
+      box-shadow: 0 16px 48px rgba(255, 152, 0, 0.35);
+      border: 4px solid #ffb74d;
+      max-width: 90vw;
+    }
+    .start-card h2 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      color: #e65100;
+      margin-bottom: 0.75rem;
+    }
+    .start-card p {
+      color: #6d4c41;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+    .btn-start {
+      background: linear-gradient(180deg, #ffeb3b, #ff9800);
+      color: #bf360c;
+      font-size: 1.35rem;
+      padding: 0.75rem 2.2rem;
+      animation: startPulse 1s ease-in-out infinite;
+    }
+    @keyframes startPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* 弹窗 */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(33, 33, 33, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      position: relative;
+      width: min(920px, 96vw);
+      max-height: 92vh;
+      background: linear-gradient(160deg, #fff9c4 0%, #ffffff 40%, #e1f5fe 100%);
+      border-radius: 32px;
+      border: 5px solid #ff7043;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden;
+      transform: scale(0.5) rotate(-8deg);
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-backdrop.open .modal {
+      transform: scale(1) rotate(0deg);
+    }
+    @media (max-width: 720px) {
+      .modal { grid-template-columns: 1fr; }
+    }
+    .modal-character {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 1rem 1rem 0;
+      background: radial-gradient(circle at 50% 80%, rgba(255, 213, 79, 0.5), transparent 65%);
+      min-height: 280px;
+    }
+    .modal-character img {
+      max-height: min(52vh, 420px);
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+      animation: popIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+    }
+    @keyframes popIn {
+      from { transform: scale(0) translateY(40px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .modal-info {
+      padding: 1.75rem 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+    .ethnic-badge {
+      display: inline-block;
+      align-self: flex-start;
+      background: #ff5722;
+      color: #fff;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      padding: 0.35rem 1.2rem;
+      border-radius: 16px;
+      box-shadow: 0 6px 0 #c62828;
+      animation: badgeWiggle 0.5s ease 0.4s both;
+    }
+    @keyframes badgeWiggle {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .region-name {
+      font-size: 1.05rem;
+      color: #5d4037;
+      font-weight: 600;
+    }
+    .greeting {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: #1565c0;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+    .btn-close {
+      margin-top: 0.5rem;
+      align-self: flex-start;
+      background: #66bb6a;
+      color: #fff;
+      font-size: 1.1rem;
+      padding: 0.55rem 1.5rem;
+    }
+    .modal-close-x {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      line-height: 1;
+      color: #757575;
+    }
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 60;
+      animation: confettiFall 1.2s ease-out forwards;
+    }
+    @keyframes confettiFall {
+      to {
+        transform: translate(var(--dx), var(--dy)) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="start-overlay" id="startOverlay">
+    <div class="start-card">
+      <h2>🗺️ 民族地图大发现</h2>
+      <p>点击地图上<strong>轻轻跳动</strong>的自治区，<br />认识穿民族服饰的小伙伴！</p>
+      <button type="button" class="btn btn-start" id="btnStart">点我开始探险 ✨</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <header>
+      <div class="title-wrap">
+        <h1>中华民族一家亲</h1>
+        <p><span>👆</span> 点一点五个自治区，发现民族小伙伴！</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn btn-sound" id="btnSound" aria-pressed="true">🔊 声音开</button>
+      </div>
+    </header>
+
+    <div class="map-stage">
+      <div class="map-frame" id="mapFrame">
+        <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+        <object id="mapObject" data="china-map-interactive.svg" type="image/svg+xml" title="中国地图"></object>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="ethnicTitle">
+    <div class="modal">
+      <button type="button" class="modal-close-x" id="modalCloseX" aria-label="关闭">×</button>
+      <div class="modal-character">
+        <img id="modalImg" src="" alt="" />
+      </div>
+      <div class="modal-info">
+        <div class="ethnic-badge" id="ethnicTitle">蒙古族</div>
+        <div class="region-name" id="regionName"></div>
+        <p class="greeting" id="greeting"></p>
+        <button type="button" class="btn btn-close" id="modalClose">继续逛地图 🎈</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const REGION_DATA = {
+      neimenggu: {
+        img: "蒙古族小女孩_教材插画风_透明底_1080.png",
+        greeting: "你好呀！我在内蒙古草原长大，欢迎来做客！🐎",
+        tone: [523, 659, 784],
+      },
+      guangxi: {
+        img: "壮族小男孩_教材插画风_透明底_1080.png",
+        greeting: "嗨！广西山好水好，三月三我们一起唱歌吧！🎵",
+        tone: [587, 698, 880],
+      },
+      xizang: {
+        img: "藏族小男孩_教材插画风_透明底_1080.png",
+        greeting: "扎西德勒！雪域高原上，我们心连着心！🏔️",
+        tone: [494, 622, 740],
+      },
+      ningxia: {
+        img: "回族小女孩_教材插画风_透明底_1080.png",
+        greeting: "你好！宁夏有美丽的黄河和香香的盖碗茶！🍵",
+        tone: [554, 698, 831],
+      },
+      xinjiang: {
+        img: "维吾尔族小女孩_教材插画风_透明底_1080.png",
+        greeting: "亚克西木热合麦提！新疆瓜果甜，友谊更甜！🍇",
+        tone: [440, 554, 659],
+      },
+    };
+
+    let soundOn = true;
+    let audioCtx = null;
+    let activeRegionEl = null;
+
+    const startOverlay = document.getElementById("startOverlay");
+    const btnStart = document.getElementById("btnStart");
+    const btnSound = document.getElementById("btnSound");
+    const mapObject = document.getElementById("mapObject");
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalImg = document.getElementById("modalImg");
+    const ethnicTitle = document.getElementById("ethnicTitle");
+    const regionName = document.getElementById("regionName");
+    const greeting = document.getElementById("greeting");
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, when, duration, type = "sine", gain = 0.18) {
+      if (!soundOn || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.exponentialRampToValueAtTime(gain, when + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(when);
+      osc.stop(when + duration + 0.05);
+    }
+
+    function playClickBlip() {
+      ensureAudio();
+      const t = audioCtx.currentTime;
+      playTone(880, t, 0.08, "triangle", 0.12);
+      playTone(1175, t + 0.06, 0.1, "sine", 0.1);
+    }
+
+    function playRevealMelody(tones) {
+      ensureAudio();
+      const t = audioCtx.currentTime;
+      tones.forEach((f, i) => {
+        playTone(f, t + i * 0.12, 0.22, i === 2 ? "sine" : "triangle", 0.16);
+      });
+      playTone(tones[2] * 1.25, t + 0.38, 0.15, "square", 0.06);
+    }
+
+    function playClosePop() {
+      ensureAudio();
+      const t = audioCtx.currentTime;
+      playTone(523, t, 0.1, "sine", 0.1);
+    }
+
+    function spawnConfetti(x, y) {
+      const colors = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#ff8fab"];
+      for (let i = 0; i < 24; i++) {
+        const el = document.createElement("div");
+        el.className = "confetti-piece";
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.background = colors[i % colors.length];
+        const dx = (Math.random() - 0.5) * 280;
+        const dy = 120 + Math.random() * 200;
+        el.style.setProperty("--dx", dx + "px");
+        el.style.setProperty("--dy", dy + "px");
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1300);
+      }
+    }
+
+    function openModal(regionId, ethnic, name, clientX, clientY) {
+      const data = REGION_DATA[regionId];
+      if (!data) return;
+
+      ethnicTitle.textContent = ethnic;
+      regionName.textContent = "📍 " + name;
+      greeting.textContent = data.greeting;
+      modalImg.src = data.img;
+      modalImg.alt = ethnic + "小朋友";
+
+      modalBackdrop.classList.add("open");
+      playRevealMelody(data.tone);
+      spawnConfetti(clientX, clientY);
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove("open");
+      playClosePop();
+      if (activeRegionEl) {
+        const svgDoc = mapObject.contentDocument;
+        const regionId = activeRegionEl.getAttribute("data-region");
+        activeRegionEl.classList.remove("is-active");
+        if (svgDoc && regionId) setRegionHover(svgDoc, regionId, false);
+        activeRegionEl = null;
+      }
+    }
+
+    function clearPopLayer(svgDoc) {
+      const pop = svgDoc.getElementById("region-pop-layer");
+      if (pop) pop.replaceChildren();
+    }
+
+    function setRegionHover(svgDoc, regionId, on) {
+      svgDoc.querySelectorAll(".region-hit-group, .region-plate").forEach((el) => {
+        if (el.getAttribute("data-region") === regionId) {
+          el.classList.toggle("is-hover", on);
+        }
+      });
+      clearPopLayer(svgDoc);
+      if (!on) return;
+      const pop = svgDoc.getElementById("region-pop-layer");
+      if (!pop) return;
+      const ns = "http://www.w3.org/2000/svg";
+      const group = svgDoc.createElementNS(ns, "g");
+      group.setAttribute("class", "pop-group");
+      svgDoc.querySelectorAll(`.region-plate[data-region="${regionId}"]`).forEach((plate) => {
+        group.appendChild(plate.cloneNode(true));
+      });
+      pop.appendChild(group);
+    }
+
+    function wireMap(svgDoc) {
+      const groups = svgDoc.querySelectorAll(".region-hit-group");
+      groups.forEach((group) => {
+        const regionId = group.getAttribute("data-region");
+        group.addEventListener("pointerenter", () => setRegionHover(svgDoc, regionId, true));
+        group.addEventListener("pointerleave", () => setRegionHover(svgDoc, regionId, false));
+        group.addEventListener("click", (e) => {
+          e.stopPropagation();
+          ensureAudio();
+          playClickBlip();
+          svgDoc.querySelectorAll(".region-hit-group.is-active").forEach((el) => {
+            el.classList.remove("is-active");
+          });
+          group.classList.add("is-active");
+          activeRegionEl = group;
+          setRegionHover(svgDoc, regionId, true);
+          openModal(
+            regionId,
+            group.getAttribute("data-ethnic"),
+            group.getAttribute("data-name"),
+            e.clientX,
+            e.clientY
+          );
+        });
+      });
+    }
+
+    function initMap() {
+      const doc = mapObject.contentDocument;
+      if (!doc) return;
+      wireMap(doc);
+    }
+
+    mapObject.addEventListener("load", initMap);
+
+    btnStart.addEventListener("click", () => {
+      ensureAudio();
+      playClickBlip();
+      startOverlay.classList.add("hidden");
+    });
+
+    btnSound.addEventListener("click", () => {
+      soundOn = !soundOn;
+      btnSound.textContent = soundOn ? "🔊 声音开" : "🔇 声音关";
+      btnSound.classList.toggle("off", !soundOn);
+      btnSound.setAttribute("aria-pressed", String(soundOn));
+      if (soundOn) ensureAudio();
+    });
+
+    document.getElementById("modalClose").addEventListener("click", closeModal);
+    document.getElementById("modalCloseX").addEventListener("click", closeModal);
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+
+    const sparklesEl = document.getElementById("sparkles");
+    const stars = ["✨", "⭐", "🌟", "💫"];
+    for (let i = 0; i < 12; i++) {
+      const s = document.createElement("span");
+      s.className = "sparkle";
+      s.textContent = stars[i % stars.length];
+      s.style.left = 5 + Math.random() * 90 + "%";
+      s.style.top = 5 + Math.random() * 90 + "%";
+      s.style.animationDelay = Math.random() * 3 + "s";
+      sparklesEl.appendChild(s);
+    }
+  </script>
+</body>
+</html>
