@@ -111,24 +111,6 @@
       display: block;
     }
 
-    .sparkles {
-      pointer-events: none;
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      border-radius: 24px;
-    }
-    .sparkle {
-      position: absolute;
-      font-size: 1.2rem;
-      opacity: 0.35;
-      animation: floatStar 4s ease-in-out infinite;
-    }
-    @keyframes floatStar {
-      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
-      50% { transform: translateY(-12px) rotate(20deg); opacity: 0.5; }
-    }
-
     /* 开场 */
     .start-overlay {
       position: fixed;
@@ -357,7 +339,6 @@
 
     <div class="map-stage">
       <div class="map-frame" id="mapFrame">
-        <div class="sparkles" id="sparkles" aria-hidden="true"></div>
         <object id="mapObject" data="china-map-interactive.svg" type="image/svg+xml" title="中国地图"></object>
       </div>
     </div>
@@ -627,18 +608,6 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeModal();
     });
-
-    const sparklesEl = document.getElementById("sparkles");
-    const stars = ["✨", "⭐", "🌟", "💫"];
-    for (let i = 0; i < 12; i++) {
-      const s = document.createElement("span");
-      s.className = "sparkle";
-      s.textContent = stars[i % stars.length];
-      s.style.left = 5 + Math.random() * 90 + "%";
-      s.style.top = 5 + Math.random() * 90 + "%";
-      s.style.animationDelay = Math.random() * 3 + "s";
-      sparklesEl.appendChild(s);
-    }
   </script>
 </body>
 </html>
